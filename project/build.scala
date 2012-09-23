@@ -28,7 +28,7 @@ object Dependencies {
 
 }
 
-object PythiaBuild extends Build {
+object ProjectBuild extends Build {
   import Resolvers._
   import Dependencies._
   import BuildSettings._
@@ -37,7 +37,7 @@ object PythiaBuild extends Build {
    * top layer  pythia
    */
   lazy val pythia = Project (
-    "nurbs",
+    "matrix",
     file ("."),
     settings = buildSettings++ Seq (resolvers :=  Seq(), libraryDependencies ++=Seq())
 
