@@ -4,14 +4,22 @@ import scala.Array
 import java.util.{HashMap, ArrayList}
 import scala.collection.JavaConversions._
 
+import scala.util.Random
+import com.sun.org.apache.bcel.internal.generic.ClassObserver
 
 class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m2: Manifest[T1], implicit val m: Fractional[T1]) {
 
   outer =>
 
+  val isConfiguredAsRowMajor = isRowMajor
 
   type DataType = T1
 
+
+  def random{
+    val rnd = new Random()
+    this.data = this.data.map(x => rnd.nextDouble().asInstanceOf[T1])
+  }
   def getArray(): Array[T1] = data
 
   private var data: Array[T1] = new Array[T1](nCols * nRows)
@@ -119,8 +127,11 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
     new RowsIterator(i)
   }
 
-  val numberRows = nRows
-  val numberCols = nCols
+  private var numberRows_ = nRows
+  private var numberCols_ = nCols
+
+  def numberRows = numberRows_
+  def numberCols = numberCols_
 
   def zeros = {
     var i: Int = 0;
@@ -272,13 +283,7 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
         }
         i = i + 1
       }
-
-
-
-
-
-
-    rMatrix
+  rMatrix
   }
 
   override def toString = {
@@ -300,7 +305,7 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
 
   }
 
-  def invert(): Unit = {
+  def invert {
     //MatrixInterface.invert(data.asInstanceOf[Array[Double]],this.numberCols)
     import Jama.{_}
 
@@ -308,8 +313,79 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
     val I = Jama.Matrix.identity(this.numberRows, this.numberCols);
     val s = A.solve(I);
     this.data = s.getColumnPackedCopy().asInstanceOf[Array[T1]]
+  }
 
-    //650321210
+  private def fromJama(m:Jama.Matrix):Array[T1]={
+
+
+
+
+    if(isRowMajor)
+      m.getRowPackedCopy.toList.map(t => t.asInstanceOf[T1]).toArray
+    else
+      m.getColumnPackedCopy.toList.map(t => t.asInstanceOf[T1]).toArray
+
+
+  }
+
+  private def toJama:Jama.Matrix={
+     isRowMajor match{
+      case false =>  new Jama.Matrix(data.asInstanceOf[Array[Double]], this.numberCols);
+      case true => {
+        val m = new Jama.Matrix(this.numberRows,this.numberCols)
+        for (i <- 0 until this.numberRows;
+             j <- 0 until this.numberCols){
+          m.set(i,j,this.apply(i,j).asInstanceOf[Double])
+        }
+        m
+      }
+    }
+  }
+  def transpose{
+
+    val A = toJama
+    val s = A.transpose()
+
+    this.data = fromJama(s)
+    this.numberRows_ = s.getRowDimension
+    this.numberCols_ = s.getColumnDimension
+  }
+
+  private def isInstanceofMatrixType[TObj](obj:TObj)(implicit mm:Manifest[TObj]):Boolean={
+      mm.isInstanceOf[T1]
+  }
+  override def hashCode() = super.hashCode()
+
+  override def equals(obj: Any) = {
+    if(!isInstanceofMatrixType(obj)) false
+    else{
+      Option(obj.asInstanceOf[Matrix[T1]]) match{
+        case Some(that) =>{
+          val isSame = (that.numberCols == this.numberCols) &&
+            (that.numberRows == this.numberRows) &&
+            that.isConfiguredAsRowMajor == this.isConfiguredAsRowMajor &&
+            (that.data zip this.data).forall(x => math.abs(m.minus( x._1 , x._2).asInstanceOf[Double])<1e-12)
+
+          isSame
+        }
+        case None => false
+      }
+    }
+
+
+  }
+
+  def cholesky:Matrix[T1]={
+
+    val A = toJama
+    val s = A.chol().getL
+
+    val result: Matrix[T1] = new Matrix[T1](s.getRowDimension,s.getColumnDimension)
+
+    result.data = fromJama(s)
+
+    result
+
   }
 }
 
