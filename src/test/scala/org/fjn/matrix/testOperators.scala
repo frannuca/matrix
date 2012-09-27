@@ -1,50 +1,152 @@
 package org.fjn.matrix
 
-/**
- * Created with IntelliJ IDEA.
- * User: fran
- * Date: 9/25/12
- * Time: 6:52 PM
- * To change this template use File | Settings | File Templates.
- */
-object testOperators {
 
-  def main(args:Array[String]){
-    val m1  = new Matrix[Double](3,2,false)
-    val m2 = new Matrix[Double](2,3,false)
+
+object testOperators{
+
+  def testProduct(rowMajor:Boolean){
+
+    val m1  = new Matrix[Double](3,2,rowMajor)
+    val m2 = new Matrix[Double](2,3,rowMajor)
+    val m3 = new Matrix[Double](3,3,rowMajor)
 
 
     m1.random
     m2.random
+    m3.random
 
-    val r = m1 * m2
+    val r = m1 * m2 + m3 - m3 * 2.0
 
-    val m1b= new Jama.Matrix(m1.numberRows,m1.numberCols)
-    val m2b= new Jama.Matrix(m2.numberRows,m2.numberCols)
+    val m1b= m1.toJama
+    val m2b= m2.toJama
+    val m3b= m3.toJama
+
+
+    var rb = m1b.times(m2b)
+    rb = rb.plus(m3b)
+    rb = rb.minus(m3b.times(2.0))
+    val rnew = new Matrix[Double](3,3,rowMajor)
+    rnew.fromJama(rb)
+
+    require(r == rnew)
+  }
+
+  def testToFromJama(rowMajor:Boolean){
+    val m1  = new Matrix[Double](3,2,rowMajor)
+    m1.random
+    val jm1 = m1.toJama
+
+    val m1copy = m1.clone()
+    m1.fromJama(jm1)
+
+    require(m1 == m1copy)
+  }
+
+
+  def testInversion(rowMajor:Boolean){
+    val mInv = new Matrix[Double](3,3,rowMajor)
+    mInv.random
+    val m2 = mInv.clone()
+    mInv.invert
+
+    val r = m2 * mInv
+
+    val I = new Matrix[Double](3,3,rowMajor)
+    I.eye
+
+    require(r == I)
+
+  }
+
+  def testTranspose(rowMajor:Boolean){
+    val m1 = new Matrix[Double](3,3,rowMajor)
+    m1.random
+
+
+    val m1t = m1.clone()
+
+    for( i <- 0 until m1.numberRows;
+         j <- 0 until m1.numberCols){
+      m1t.set(i,j,m1(j,i))
+    }
+
+
+    require(m1.transpose == m1t)
+  }
+
+  def testCholesky(rowMajor:Boolean){
+    val m1 = new Matrix[Double](3,3,rowMajor)
+    m1.set(0,0,9.25)
+    m1.set(0,1,3.5)
+    m1.set(0,2,-2.5)
+    m1.set(1,1,18.3)
+    m1.set(1,2,5.33)
+    m1.set(2,2,14.75)
+
 
     for (i <- 0 until m1.numberRows;
-         j <- 0 until m1.numberCols){
-      m1b.set(i,j,m1(i,j))
+         j <- i until m1.numberCols){
+      m1.set(j,i,m1(i,j))
     }
 
-    for (i <- 0 until m2.numberRows;
-         j <- 0 until m2.numberCols){
-      m2b.set(i,j,m2(i,j))
+    val mm = m1.eigVectors
+
+    val mCholesky = m1.cholesky
+    val r =  mCholesky * mCholesky.transpose
+
+    require(r == m1)
+
+
+  }
+
+  def testEigen(rowMajor:Boolean){
+    val m1 = new Matrix[Double](3,3,rowMajor)
+    m1.set(0,0,9.25)
+    m1.set(0,1,3.5)
+    m1.set(0,2,-2.5)
+    m1.set(1,1,18.3)
+    m1.set(1,2,5.33)
+    m1.set(2,2,14.75)
+
+
+    for (i <- 0 until m1.numberRows;
+         j <- i until m1.numberCols){
+      m1.set(j,i,m1(i,j))
     }
 
-    val rb = m1b.times(m2b)
+    val mm = m1.eigVectors
 
-    for (i <- 0 until r.numberRows;
-         j <- 0 until r.numberCols){
-      if(math.abs(r(i,j)-rb.get(i,j))>1e-6){
-        throw new Exception("matrix are different")
-      }
-    }
+    val eigVec = mm._2
+    val eigVal = mm._1
 
+    val x1 = m1 * eigVec
+    val x2 = eigVec * eigVal
 
+    require(x1 == x2)
 
 
 
   }
+  def main(args:Array[String]){
+
+    testToFromJama(rowMajor = true)
+    testToFromJama(rowMajor =false)
+    testProduct(rowMajor =true)
+    testProduct(rowMajor =false)
+    testInversion(rowMajor =true)
+    testInversion(rowMajor =false)
+
+    testTranspose(rowMajor =true)
+    testTranspose(rowMajor =false)
+
+    testCholesky(rowMajor = true)
+    testCholesky(rowMajor = false)
+
+    testEigen(rowMajor = true)
+    testEigen(rowMajor = false)
+
+  }
+
+
 
 }

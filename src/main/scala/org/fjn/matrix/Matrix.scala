@@ -172,7 +172,7 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
 
   def *(a: T1): Matrix[T1] = {
 
-    val rMatrix: Matrix[T1] = new Matrix[T1](this.numberRows, this.numberCols);
+    val rMatrix: Matrix[T1] = new Matrix[T1](this.numberRows, this.numberCols,isConfiguredAsRowMajor);
     var i = 0
     while (i < rMatrix.data.length) {
       rMatrix.data(i) = m.times(this.data(i), a)
@@ -194,7 +194,7 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
 
   def +(b: Matrix[T1]): Matrix[T1] = {
     require(this.numberCols == b.numberCols && this.numberRows == b.numberRows)
-    val rMatrix: Matrix[T1] = new Matrix[T1](this.numberRows, this.numberCols);
+    val rMatrix: Matrix[T1] = new Matrix[T1](this.numberRows, this.numberCols,isConfiguredAsRowMajor);
     var i = 0
     var j = 0
     while (i < rMatrix.numberRows) {
@@ -215,7 +215,7 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
 
   def -(b: Matrix[T1]): Matrix[T1] = {
     require(this.numberCols == b.numberCols && this.numberRows == b.numberRows)
-    val rMatrix: Matrix[T1] = new Matrix[T1](this.numberRows, this.numberCols);
+    val rMatrix: Matrix[T1] = new Matrix[T1](this.numberRows, this.numberCols,isConfiguredAsRowMajor);
     var i = 0
     var j = 0
     while (i < rMatrix.numberRows) {
@@ -236,7 +236,8 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
 
 
   override def clone(): Matrix[T1] = {
-    val out = new Matrix[T1](this.numberRows, this.numberCols)
+    val out = new Matrix[T1](this.numberRows, this.numberCols,this.isConfiguredAsRowMajor)
+
     outer.data.copyToArray(out.data,0)
     out
   }
@@ -257,7 +258,7 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
     case class RowColMsg(rowIndex: Int, colIndex: Int, a1: Array[T1], a2: Array[T1])
 
     require(this.numberCols == b.numberRows)
-    val rMatrix: Matrix[T1] = new Matrix[T1](this.numberRows, b.numberCols);
+    val rMatrix: Matrix[T1] = new Matrix[T1](this.numberRows, b.numberCols,isConfiguredAsRowMajor);
     var i = 0
     var j = 0
 
@@ -305,50 +306,48 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
 
   }
 
+  /**
+   * TODO: Does a hard copy of the matrix, not good for large systems
+   */
   def invert {
     //MatrixInterface.invert(data.asInstanceOf[Array[Double]],this.numberCols)
     import Jama.{_}
 
-    val A: Jama.Matrix = new Jama.Matrix(data.asInstanceOf[Array[Double]], this.numberCols);
+    val A = toJama
     val I = Jama.Matrix.identity(this.numberRows, this.numberCols);
     val s = A.solve(I);
-    this.data = s.getColumnPackedCopy().asInstanceOf[Array[T1]]
+    fromJama(s)
   }
 
-  private def fromJama(m:Jama.Matrix):Array[T1]={
-
-
-
+  def fromJama(m:Jama.Matrix){
 
     if(isRowMajor)
-      m.getRowPackedCopy.toList.map(t => t.asInstanceOf[T1]).toArray
+      this.data = m.getRowPackedCopy.toList.map(t => t.asInstanceOf[T1]).toArray
     else
-      m.getColumnPackedCopy.toList.map(t => t.asInstanceOf[T1]).toArray
+      this.data = m.getColumnPackedCopy.toList.map(t => t.asInstanceOf[T1]).toArray
 
 
   }
 
-  private def toJama:Jama.Matrix={
-     isRowMajor match{
-      case false =>  new Jama.Matrix(data.asInstanceOf[Array[Double]], this.numberCols);
-      case true => {
+  def toJama:Jama.Matrix={
+
+
         val m = new Jama.Matrix(this.numberRows,this.numberCols)
         for (i <- 0 until this.numberRows;
              j <- 0 until this.numberCols){
           m.set(i,j,this.apply(i,j).asInstanceOf[Double])
         }
         m
-      }
-    }
+
+
   }
-  def transpose{
+  def transpose:Matrix[T1]={
 
-    val A = toJama
-    val s = A.transpose()
+    val trans = this.clone()
 
-    this.data = fromJama(s)
-    this.numberRows_ = s.getRowDimension
-    this.numberCols_ = s.getColumnDimension
+    val A = trans.toJama
+    trans.fromJama(A.transpose())
+    trans
   }
 
   private def isInstanceofMatrixType[TObj](obj:TObj)(implicit mm:Manifest[TObj]):Boolean={
@@ -375,17 +374,30 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
 
   }
 
+
+  def eigVectors:(Matrix[T1],Matrix[T1])={
+
+    val A = toJama
+    val ev = A.eig()
+
+    val evD = ev.getD
+    val eigenMatrixD = new Matrix[T1](evD.getRowDimension,evD.getColumnDimension,isConfiguredAsRowMajor)
+    eigenMatrixD.fromJama(evD)
+
+    val evV = ev.getV
+    val eigenMatrixV = new Matrix[T1](evV.getRowDimension,evV.getColumnDimension,isConfiguredAsRowMajor)
+    eigenMatrixV.fromJama(evV)
+
+
+    (eigenMatrixD,eigenMatrixV)
+  }
   def cholesky:Matrix[T1]={
 
     val A = toJama
     val s = A.chol().getL
-
-    val result: Matrix[T1] = new Matrix[T1](s.getRowDimension,s.getColumnDimension)
-
-    result.data = fromJama(s)
-
+    val result: Matrix[T1] = new Matrix[T1](s.getRowDimension,s.getColumnDimension,isConfiguredAsRowMajor)
+    result.fromJama(s)
     result
-
   }
 }
 
