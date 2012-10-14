@@ -6,15 +6,22 @@ import scala.collection.JavaConversions._
 
 import scala.util.Random
 import com.sun.org.apache.bcel.internal.generic.ClassObserver
+import org.fjn.matrix
+
 
 class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m2: Manifest[T1], implicit val m: Fractional[T1]) {
-
   outer =>
 
   val isConfiguredAsRowMajor = isRowMajor
 
   type DataType = T1
 
+
+  def <=(x:Seq[T1]):Matrix[T1]={
+    require(x.length == this.numberRows && this.numberCols == 1)
+    x.toArray.copyToArray(this.data,0)
+    this
+  }
 
   def random{
     val rnd = new Random()
@@ -319,6 +326,7 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
     fromJama(s)
   }
 
+
   def fromJama(m:Jama.Matrix){
 
     if(isRowMajor)
@@ -343,10 +351,13 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
   }
   def transpose:Matrix[T1]={
 
-    val trans = this.clone()
 
-    val A = trans.toJama
+    val A = clone.toJama
+
+    val trans = new Matrix[T1](numberCols,numberRows)
+
     trans.fromJama(A.transpose())
+
     trans
   }
 

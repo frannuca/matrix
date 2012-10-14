@@ -63,7 +63,7 @@ object testOperators{
     m1.random
 
 
-    val m1t = m1.clone()
+    val m1t = new Matrix[Double](m1.numberCols,m1.numberRows)
 
     for( i <- 0 until m1.numberRows;
          j <- 0 until m1.numberCols){
