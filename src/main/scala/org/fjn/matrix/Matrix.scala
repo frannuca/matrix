@@ -177,6 +177,19 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
   }
 
 
+  def /(a: T1): Matrix[T1] = {
+
+    val rMatrix: Matrix[T1] = new Matrix[T1](this.numberRows, this.numberCols,isConfiguredAsRowMajor);
+    var i = 0
+    while (i < rMatrix.data.length) {
+      rMatrix.data(i) = m.div(this.data(i), a)
+      i = i + 1
+    }
+
+    rMatrix
+  }
+
+
   def *(a: T1): Matrix[T1] = {
 
     val rMatrix: Matrix[T1] = new Matrix[T1](this.numberRows, this.numberCols,isConfiguredAsRowMajor);
@@ -385,6 +398,11 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
 
   }
 
+
+  def det:T1={
+    val A = toJama
+    A.det().asInstanceOf[T1]
+  }
 
   def eigVectors:(Matrix[T1],Matrix[T1])={
 
