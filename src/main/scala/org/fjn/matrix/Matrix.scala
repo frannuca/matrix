@@ -254,6 +254,15 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
 
   }
 
+  def -(b: T1): Matrix[T1] = {
+    val resM = this.clone()
+    var i = 0;
+    while (i < data.length) {
+      resM.data(i) = m.minus(data(i), b)
+      i = i + 1
+    }
+    resM
+  }
 
   override def clone(): Matrix[T1] = {
     val out = new Matrix[T1](this.numberRows, this.numberCols,this.isConfiguredAsRowMajor)
@@ -428,6 +437,8 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
     result.fromJama(s)
     result
   }
+
+
 }
 
 

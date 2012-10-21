@@ -127,6 +127,53 @@ object testOperators{
 
 
   }
+
+
+  def testScalar(rowMajor:Boolean){
+    import Scalar2MatrixConversions._
+    val m1 = new Matrix[Double](3,3,rowMajor)
+    m1.set(0,0,1.0)
+    m1.set(0,1,2.0)
+    m1.set(0,2,3.0)
+    m1.set(1,1,4.0)
+    m1.set(1,2,5.0)
+    m1.set(2,2,6.0)
+
+
+    m1.set(1,0,2.0)
+    m1.set(2,0,3.0)
+    m1.set(2,1,5.0)
+
+
+
+    val rProda = 2.0 * m1
+    val rProdb = m1*2.0
+    require(rProda == rProdb)
+    require(2.0+m1 == m1+2.0)
+    require(2.0-m1 == m1-2.0)
+
+
+
+
+    val m2 = new Matrix[Double](3,3,rowMajor)
+    m2.set(0,0,1.0)
+    m2.set(0,1,1.0/2.0)
+    m2.set(0,2,1.0/3.0)
+    m2.set(1,1,1.0/4.0)
+    m2.set(1,2,1.0/5.0)
+    m2.set(2,2,1.0/6.0)
+    m2.set(1,0,1.0/2.0)
+    m2.set(2,0,1.0/3.0)
+    m2.set(2,1,1.0/5.0)
+
+
+
+    val r2 = 1.0 / m1
+
+    require(r2 == m2)
+
+
+  }
   def main(args:Array[String]){
 
     testToFromJama(rowMajor = true)
@@ -145,6 +192,8 @@ object testOperators{
     testEigen(rowMajor = true)
     testEigen(rowMajor = false)
 
+    testScalar(rowMajor = true)
+    testScalar(rowMajor = false)
   }
 
 
