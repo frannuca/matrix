@@ -9,6 +9,8 @@ import com.sun.org.apache.bcel.internal.generic.ClassObserver
 import org.fjn.matrix
 
 
+
+
 class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m2: Manifest[T1], implicit val m: Fractional[T1]) {
   outer =>
 
@@ -140,7 +142,7 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
   def numberRows = numberRows_
   def numberCols = numberCols_
 
-  def zeros = {
+  def zeros:Matrix[T1] = {
     var i: Int = 0;
     while (i < numberRows) {
       var j: Int = 0
@@ -150,6 +152,7 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
       }
       i = i + 1
     }
+    this
   }
 
   def eye = {
@@ -438,6 +441,15 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
     result
   }
 
+  def sub(rows:Seq[Int],cols:Seq[Int]):Matrix[T1]={
+    val r = new Matrix[T1](rows.length,cols.length,isRowMajor)
+    for (ir <- rows;
+         cr <- cols){
+      r.set(ir,cr,this.apply(ir,cr))
+    }
+
+    r
+  }
 
 }
 

@@ -129,6 +129,24 @@ object testOperators{
   }
 
 
+  def testSubMatrix(rowMajor:Boolean){
+    val m1 = new Matrix[Double](3,3,rowMajor)
+    m1.set(0,0,1.0)
+    m1.set(0,1,2.0)
+    m1.set(1,0,4.0)
+
+    val m2 = new Matrix[Double](2,1,rowMajor)
+    m2.set(0,0,1.0)
+    m2.set(1,0,4.0)
+
+
+
+    val sm1 = m1.sub(0 until 2, 0 until 1)
+
+    require(sm1.numberRows == 2 && sm1.numberCols ==1)
+    require(m2 == sm1)
+
+  }
   def testScalar(rowMajor:Boolean){
     import Scalar2MatrixConversions._
     val m1 = new Matrix[Double](3,3,rowMajor)
@@ -174,6 +192,8 @@ object testOperators{
 
 
   }
+
+
   def main(args:Array[String]){
 
     testToFromJama(rowMajor = true)
@@ -194,6 +214,10 @@ object testOperators{
 
     testScalar(rowMajor = true)
     testScalar(rowMajor = false)
+
+
+    testSubMatrix(rowMajor = true)
+    testSubMatrix(rowMajor = false)
   }
 
 
