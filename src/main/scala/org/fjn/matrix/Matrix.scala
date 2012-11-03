@@ -25,6 +25,11 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
     this
   }
 
+  def <=(f:(T1)=> T1):Matrix[T1]={
+    this.data = this.data.map(f)
+    this
+  }
+
   def random{
     val rnd = new Random()
     this.data = this.data.map(x => rnd.nextDouble().asInstanceOf[T1])
