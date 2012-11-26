@@ -9,8 +9,6 @@ import com.sun.org.apache.bcel.internal.generic.ClassObserver
 import org.fjn.matrix
 
 
-
-
 class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m2: Manifest[T1], implicit val m: Fractional[T1]) {
   outer =>
 
@@ -19,21 +17,36 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
   type DataType = T1
 
 
-  def <=(x:Seq[T1]):Matrix[T1]={
+  def <=(x: Seq[T1]): Matrix[T1] = {
     require(x.length == this.numberRows && this.numberCols == 1)
-    x.toArray.copyToArray(this.data,0)
+    x.toArray.copyToArray(this.data, 0)
     this
   }
 
-  def <=(f:(T1)=> T1):Matrix[T1]={
+  def <=(x: String): Matrix[T1] = {
+    val rows: Array[String] = x.split(";")
+    require(rows.length == this.numberRows)
+
+    for (i <- 0 until rows.length) {
+      val cols = rows(i).split(",")
+      for (j <- 0 until cols.length) {
+        set(i, j, cols(j).toDouble.asInstanceOf[T1])
+      }
+    }
+    this
+  }
+
+  def <=(f: (T1) => T1): Matrix[T1] = {
     this.data = this.data.map(f)
     this
   }
 
-  def random{
+  def random:Matrix[T1]= {
     val rnd = new Random()
     this.data = this.data.map(x => rnd.nextDouble().asInstanceOf[T1])
+    this
   }
+
   def getArray(): Array[T1] = data
 
   private var data: Array[T1] = new Array[T1](nCols * nRows)
@@ -145,9 +158,10 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
   private var numberCols_ = nCols
 
   def numberRows = numberRows_
+
   def numberCols = numberCols_
 
-  def zeros:Matrix[T1] = {
+  def zeros: Matrix[T1] = {
     var i: Int = 0;
     while (i < numberRows) {
       var j: Int = 0
@@ -159,6 +173,7 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
     }
     this
   }
+
 
   def eye = {
     zeros
@@ -187,7 +202,7 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
 
   def /(a: T1): Matrix[T1] = {
 
-    val rMatrix: Matrix[T1] = new Matrix[T1](this.numberRows, this.numberCols,isConfiguredAsRowMajor);
+    val rMatrix: Matrix[T1] = new Matrix[T1](this.numberRows, this.numberCols, isConfiguredAsRowMajor);
     var i = 0
     while (i < rMatrix.data.length) {
       rMatrix.data(i) = m.div(this.data(i), a)
@@ -200,7 +215,7 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
 
   def *(a: T1): Matrix[T1] = {
 
-    val rMatrix: Matrix[T1] = new Matrix[T1](this.numberRows, this.numberCols,isConfiguredAsRowMajor);
+    val rMatrix: Matrix[T1] = new Matrix[T1](this.numberRows, this.numberCols, isConfiguredAsRowMajor);
     var i = 0
     while (i < rMatrix.data.length) {
       rMatrix.data(i) = m.times(this.data(i), a)
@@ -222,7 +237,7 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
 
   def +(b: Matrix[T1]): Matrix[T1] = {
     require(this.numberCols == b.numberCols && this.numberRows == b.numberRows)
-    val rMatrix: Matrix[T1] = new Matrix[T1](this.numberRows, this.numberCols,isConfiguredAsRowMajor);
+    val rMatrix: Matrix[T1] = new Matrix[T1](this.numberRows, this.numberCols, isConfiguredAsRowMajor);
     var i = 0
     var j = 0
     while (i < rMatrix.numberRows) {
@@ -243,7 +258,7 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
 
   def -(b: Matrix[T1]): Matrix[T1] = {
     require(this.numberCols == b.numberCols && this.numberRows == b.numberRows)
-    val rMatrix: Matrix[T1] = new Matrix[T1](this.numberRows, this.numberCols,isConfiguredAsRowMajor);
+    val rMatrix: Matrix[T1] = new Matrix[T1](this.numberRows, this.numberCols, isConfiguredAsRowMajor);
     var i = 0
     var j = 0
     while (i < rMatrix.numberRows) {
@@ -273,15 +288,28 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
   }
 
   override def clone(): Matrix[T1] = {
-    val out = new Matrix[T1](this.numberRows, this.numberCols,this.isConfiguredAsRowMajor)
+    val out = new Matrix[T1](this.numberRows, this.numberCols, this.isConfiguredAsRowMajor)
 
-    outer.data.copyToArray(out.data,0)
+    outer.data.copyToArray(out.data, 0)
     out
   }
 
+  def copyFrom(that: Matrix[T1]) {
+    if (that.numberCols == numberCols && that.numberRows == numberRows) {
+      for (j <- 0 until numberCols;
+           i <- 0 until numberRows) {
+        set(i, j, that(i, j))
+      }
+    }
+    else {
+      throw new Exception("inompatible size applied to matrix copyFrom operation")
+    }
+  }
+
+
   def unary_+ : Matrix[T1] = {
     val out = new Matrix[T1](this.numberRows, this.numberCols)
-    this.data.copyToArray(out.data,0)
+    this.data.copyToArray(out.data, 0)
     out
   }
 
@@ -292,36 +320,37 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
   }
 
   def *(b: Matrix[T1]): Matrix[T1] = {
+
     case class RowColMsg(rowIndex: Int, colIndex: Int, a1: Array[T1], a2: Array[T1])
 
     require(this.numberCols == b.numberRows)
-    val rMatrix: Matrix[T1] = new Matrix[T1](this.numberRows, b.numberCols,isConfiguredAsRowMajor);
+    val rMatrix: Matrix[T1] = new Matrix[T1](this.numberRows, b.numberCols, isConfiguredAsRowMajor);
     var i = 0
     var j = 0
 
 
-      var k = 0
-      while (i < rMatrix.numberRows) {
+    var k = 0
+    while (i < rMatrix.numberRows) {
 
-        j = 0
-        val iterator1 = outer.getRowArrayIterator(i)
-        while (j < b.numberCols) {
-          val iterator2 = b.getColArrayIterator(j)
-          var r: T1 = m.zero
+      j = 0
+      val iterator1 = outer.getRowArrayIterator(i)
+      while (j < b.numberCols) {
+        val iterator2 = b.getColArrayIterator(j)
+        var r: T1 = m.zero
 
-          k = 0
-          while (k < b.numberRows) {
-            r = m.plus(r, m.times(iterator1.next, iterator2.next))
-            k = k + 1
-          }
-
-          rMatrix.set(i, j, r)
-          j = j + 1
-          iterator1.reset
+        k = 0
+        while (k < b.numberRows) {
+          r = m.plus(r, m.times(iterator1.next, iterator2.next))
+          k = k + 1
         }
-        i = i + 1
+
+        rMatrix.set(i, j, r)
+        j = j + 1
+        iterator1.reset
       }
-  rMatrix
+      i = i + 1
+    }
+    rMatrix
   }
 
   override def toString = {
@@ -348,6 +377,7 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
    */
   def invert {
     //MatrixInterface.invert(data.asInstanceOf[Array[Double]],this.numberCols)
+
     import Jama.{_}
 
     val A = toJama
@@ -357,9 +387,9 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
   }
 
 
-  def fromJama(m:Jama.Matrix){
+  def fromJama(m: Jama.Matrix) {
 
-    if(isRowMajor)
+    if (isRowMajor)
       this.data = m.getRowPackedCopy.toList.map(t => t.asInstanceOf[T1]).toArray
     else
       this.data = m.getColumnPackedCopy.toList.map(t => t.asInstanceOf[T1]).toArray
@@ -367,44 +397,46 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
 
   }
 
-  def toJama:Jama.Matrix={
+  def toJama: Jama.Matrix = {
 
 
-        val m = new Jama.Matrix(this.numberRows,this.numberCols)
-        for (i <- 0 until this.numberRows;
-             j <- 0 until this.numberCols){
-          m.set(i,j,this.apply(i,j).asInstanceOf[Double])
-        }
-        m
+    val m = new Jama.Matrix(this.numberRows, this.numberCols)
+    for (i <- 0 until this.numberRows;
+         j <- 0 until this.numberCols) {
+      m.set(i, j, this.apply(i, j).asInstanceOf[Double])
+    }
+    m
 
 
   }
-  def transpose:Matrix[T1]={
+
+  def transpose: Matrix[T1] = {
 
 
     val A = clone.toJama
 
-    val trans = new Matrix[T1](numberCols,numberRows)
+    val trans = new Matrix[T1](numberCols, numberRows)
 
     trans.fromJama(A.transpose())
 
     trans
   }
 
-  private def isInstanceofMatrixType[TObj](obj:TObj)(implicit mm:Manifest[TObj]):Boolean={
-      mm.isInstanceOf[T1]
+  private def isInstanceofMatrixType[TObj](obj: TObj)(implicit mm: Manifest[TObj]): Boolean = {
+    mm.isInstanceOf[T1]
   }
+
   override def hashCode() = super.hashCode()
 
   override def equals(obj: Any) = {
-    if(!isInstanceofMatrixType(obj)) false
-    else{
-      Option(obj.asInstanceOf[Matrix[T1]]) match{
-        case Some(that) =>{
+    if (!isInstanceofMatrixType(obj)) false
+    else {
+      Option(obj.asInstanceOf[Matrix[T1]]) match {
+        case Some(that) => {
           val isSame = (that.numberCols == this.numberCols) &&
             (that.numberRows == this.numberRows) &&
             that.isConfiguredAsRowMajor == this.isConfiguredAsRowMajor &&
-            (that.data zip this.data).forall(x => math.abs(m.minus( x._1 , x._2).asInstanceOf[Double])<1e-12)
+            (that.data zip this.data).forall(x => math.abs(m.minus(x._1, x._2).asInstanceOf[Double]) < 1e-12)
 
           isSame
         }
@@ -416,44 +448,62 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
   }
 
 
-  def det:T1={
+  def det: T1 = {
     val A = toJama
     A.det().asInstanceOf[T1]
   }
 
-  def eigVectors:(Matrix[T1],Matrix[T1])={
+  def eigVectors: (Matrix[T1], Matrix[T1]) = {
 
     val A = toJama
     val ev = A.eig()
 
     val evD = ev.getD
-    val eigenMatrixD = new Matrix[T1](evD.getRowDimension,evD.getColumnDimension,isConfiguredAsRowMajor)
+    val eigenMatrixD = new Matrix[T1](evD.getRowDimension, evD.getColumnDimension, isConfiguredAsRowMajor)
     eigenMatrixD.fromJama(evD)
 
     val evV = ev.getV
-    val eigenMatrixV = new Matrix[T1](evV.getRowDimension,evV.getColumnDimension,isConfiguredAsRowMajor)
+    val eigenMatrixV = new Matrix[T1](evV.getRowDimension, evV.getColumnDimension, isConfiguredAsRowMajor)
     eigenMatrixV.fromJama(evV)
 
 
-    (eigenMatrixD,eigenMatrixV)
+    (eigenMatrixD, eigenMatrixV)
   }
-  def cholesky:Matrix[T1]={
+
+  def cholesky: Matrix[T1] = {
 
     val A = toJama
     val s = A.chol().getL
-    val result: Matrix[T1] = new Matrix[T1](s.getRowDimension,s.getColumnDimension,isConfiguredAsRowMajor)
+    val result: Matrix[T1] = new Matrix[T1](s.getRowDimension, s.getColumnDimension, isConfiguredAsRowMajor)
     result.fromJama(s)
     result
   }
 
-  def sub(rows:Seq[Int],cols:Seq[Int]):Matrix[T1]={
-    val r = new Matrix[T1](rows.length,cols.length,isRowMajor)
+  def sub(rows: Seq[Int], cols: Seq[Int]): Matrix[T1] = {
+    val r = new Matrix[T1](rows.length, cols.length, isRowMajor)
     for (ir <- rows;
-         cr <- cols){
-      r.set(ir,cr,this.apply(ir,cr))
+         cr <- cols) {
+      r.set(ir, cr, this.apply(ir, cr))
     }
 
     r
+  }
+
+  /**
+   * apply a matrix mask to this matrix. A mask operation consist on multiplying each position in this matrix with
+   * its corresponding position in the mask. The size of the mask must be smaller or equal than the size of this matrix.
+   * If the number of columns or rows in the mask is smaller than rank of this matrix then the mask is only applied
+   * to this portion of the matrix
+   * @param mask
+   */
+  def <:=(mask: Matrix[T1]) {
+    if (mask.numberCols <= numberCols && mask.numberRows <= numberRows) {
+      for (i <- 0 until mask.numberRows;
+           j <- 0 until mask.numberCols) {
+        set(i, j, m.times(this(i, j), mask(i, j)))
+      }
+    }
+
   }
 
 }

@@ -147,6 +147,13 @@ object testOperators{
     require(m2 == sm1)
 
   }
+
+  def string2matrix{
+    val a = new Matrix[Double](2,2) <= "1,0;0,1"
+    val b = new Matrix[Double](2,2)
+    b.eye
+    require( a == b)
+  }
   def testScalar(rowMajor:Boolean){
     import Scalar2MatrixConversions._
     val m1 = new Matrix[Double](3,3,rowMajor)
@@ -218,6 +225,8 @@ object testOperators{
 
     testSubMatrix(rowMajor = true)
     testSubMatrix(rowMajor = false)
+
+    string2matrix
   }
 
 
