@@ -9,13 +9,13 @@ import com.sun.org.apache.bcel.internal.generic.ClassObserver
 import org.fjn.matrix
 
 
-class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m2: Manifest[T1], implicit val m: Fractional[T1]) {
+class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m2: Manifest[T1], implicit val m: Fractional[T1])
+extends Serializable{
   outer =>
 
   val isConfiguredAsRowMajor = isRowMajor
 
   type DataType = T1
-
 
   def <=(x: Seq[T1]): Matrix[T1] = {
     require(x.length == this.numberRows && this.numberCols == 1)
@@ -364,7 +364,7 @@ class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m
         rStr.append(",")
         j = j + 1;
       }
-      rStr.append('\n')
+      rStr.append(';')
       i = i + 1
     }
 

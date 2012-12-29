@@ -1,5 +1,6 @@
 package org.fjn.matrix
 
+import java.io.{ObjectInputStream, FileInputStream, ObjectOutputStream, FileOutputStream}
 
 
 object testOperators{
@@ -201,6 +202,33 @@ object testOperators{
   }
 
 
+  def testSerialization{
+    import Scalar2MatrixConversions._
+    val m1 = new Matrix[Double](3,3,true)
+    m1.set(0,0,1.0)
+    m1.set(0,1,2.0)
+    m1.set(0,2,3.0)
+    m1.set(1,1,4.0)
+    m1.set(1,2,5.0)
+    m1.set(2,2,6.0)
+
+
+    m1.set(1,0,2.0)
+    m1.set(2,0,3.0)
+    m1.set(2,1,5.0)
+
+    val output = new ObjectOutputStream(new FileOutputStream("C:\\temp\\test.obj"))
+    output.writeObject(m1)
+    output.close()
+
+    val input = new ObjectInputStream(new FileInputStream("C:\\temp\\test.obj"))
+    val obj = input.readObject()
+    input.close()
+    val m2 = obj.asInstanceOf[Matrix[Double]]
+
+    require(m1 == m2)
+  }
+
   def main(args:Array[String]){
 
     testToFromJama(rowMajor = true)
@@ -227,6 +255,8 @@ object testOperators{
     testSubMatrix(rowMajor = false)
 
     string2matrix
+
+    testSerialization
   }
 
 
