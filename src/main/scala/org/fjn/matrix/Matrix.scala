@@ -481,9 +481,9 @@ extends Serializable{
 
   def sub(rows: Seq[Int], cols: Seq[Int]): Matrix[T1] = {
     val r = new Matrix[T1](rows.length, cols.length, isRowMajor)
-    for (ir <- rows;
-         cr <- cols) {
-      r.set(ir, cr, this.apply(ir, cr))
+    for (ir <- rows.indices;
+         cr <- cols.indices) {
+      r.set(ir, cr, this.apply(rows(ir),cols(cr)))
     }
 
     r
