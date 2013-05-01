@@ -386,6 +386,12 @@ extends Serializable{
     fromJama(s)
   }
 
+  def svd(): (Jama.Matrix, Jama.Matrix, Jama.Matrix) ={
+    import Jama._
+    val A = toJama
+    val sv = new  Jama.SingularValueDecomposition(A)
+    (sv.getU,sv.getS,sv.getV)
+  }
 
   def fromJama(m: Jama.Matrix) {
 
