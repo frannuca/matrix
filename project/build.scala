@@ -9,7 +9,7 @@ object BuildSettings {
 
   val buildOrganization = "org.fjn"
   val buildVersion      = "1.0.0"
-  val buildScalaVersion = "2.9.2"
+  val buildScalaVersion = "2.10.3"
 
   val buildSettings = Defaults.defaultSettings ++ Seq (
     organization := buildOrganization,
