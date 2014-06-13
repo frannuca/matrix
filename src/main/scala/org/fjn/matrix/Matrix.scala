@@ -9,9 +9,10 @@ import com.sun.org.apache.bcel.internal.generic.ClassObserver
 import org.fjn.matrix
 
 
-class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false)(implicit m2: Manifest[T1], implicit val m: Fractional[T1])
+class Matrix[T1](nRows: Int, nCols: Int, isRowMajor: Boolean = false,dataArray:Option[Array[T1]]=None)(implicit m2: Manifest[T1], implicit val m: Fractional[T1])
 extends Serializable{
   outer =>
+
 
   val isConfiguredAsRowMajor = isRowMajor
 
@@ -36,8 +37,11 @@ extends Serializable{
     this
   }
 
+  def update(i:Int,j:Int,v:T1){
+    this.set(i,j,v)
+  }
   def <=(f: (T1) => T1): Matrix[T1] = {
-    this.data = this.data.map(f)
+    this.data = this.data.par.map(f).seq.toArray
     this
   }
 
@@ -49,7 +53,10 @@ extends Serializable{
 
   def getArray(): Array[T1] = data
 
-  private var data: Array[T1] = new Array[T1](nCols * nRows)
+  private var data: Array[T1] = dataArray match{
+    case Some(x)=> x
+    case _=> new Array[T1](nCols * nRows)
+  }
 
   def apply(row: Int, col: Int): T1 = {
 
@@ -431,6 +438,8 @@ extends Serializable{
   private def isInstanceofMatrixType[TObj](obj: TObj)(implicit mm: Manifest[TObj]): Boolean = {
     mm.isInstanceOf[T1]
   }
+
+
 
   override def hashCode() = super.hashCode()
 
